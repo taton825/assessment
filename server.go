@@ -4,11 +4,45 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
+
+var db *sql.DB
+
+type Expense struct {
+	ID     int      `json:"id"`
+	Title  string   `json:"title"`
+	Amount float64  `json:"amount"`
+	Note   string   `json:"note"`
+	Tags   []string `json:"tags"`
+}
+
+type Err struct {
+	Message string `json:"message"`
+}
+
+func createExpenseHandler(c echo.Context) error {
+	var e Expense
+	err := c.Bind(&e)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
+	}
+	fmt.Println(e)
+	row := db.QueryRow("INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id", e.Title, e.Amount, e.Note, pq.Array(e.Tags))
+
+	err = row.Scan(&e.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't insert data:" + err.Error()})
+	}
+	return c.JSON(http.StatusCreated, e)
+}
 
 func main() {
 
@@ -26,14 +60,13 @@ func main() {
 			log.Fatalln("Error Load ENV: ENVIRONMENT For Local")
 		}
 	}
-	fmt.Println("start at port:", port)
 
 	databaseUrl, ok := os.LookupEnv("DATABASE_URL")
 	if !ok {
 		log.Fatalln("Error to load DATABASE_URL from .env file")
 	}
-
-	db, err := sql.Open("postgres", databaseUrl)
+	var err error
+	db, err = sql.Open("postgres", databaseUrl)
 	if err != nil {
 		log.Fatalln("Connect to Database error", err)
 	}
@@ -52,4 +85,15 @@ func main() {
 	}
 
 	fmt.Println("create table success!!")
+
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	e.POST("/expenses", createExpenseHandler)
+
+	log.Println("Server started at :", port)
+	log.Fatal(e.Start(fmt.Sprintf(":%s", port)))
+	log.Println("Server Shutdown!! bye bye")
 }
