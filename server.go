@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"github.com/taton825/assessment/config"
 )
 
 var db *sql.DB
@@ -46,20 +46,8 @@ func createExpenseHandler(c echo.Context) error {
 
 func main() {
 
-	// Load env file from Local env file
 	fmt.Println("Please use server.go for main file")
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		fmt.Println("Can't Lookup Env file with os lib")
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatalln("Error to load .env file")
-		}
-		port, ok = os.LookupEnv("PORT")
-		if !ok {
-			log.Fatalln("Error Load ENV: ENVIRONMENT For Local")
-		}
-	}
+	config.LoadEnvironmentLocal()
 
 	databaseUrl, ok := os.LookupEnv("DATABASE_URL")
 	if !ok {
@@ -94,7 +82,7 @@ func main() {
 
 	e.POST("/expenses", createExpenseHandler)
 
-	log.Println("Server started at :", port)
-	log.Fatal(e.Start(fmt.Sprintf(":%s", port)))
+	log.Println("Server started at :", os.Getenv("PORT"))
+	log.Fatal(e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))))
 	log.Println("Server Shutdown!! bye bye")
 }
