@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,9 +11,8 @@ import (
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/taton825/assessment/config"
+	"github.com/taton825/assessment/database"
 )
-
-var db *sql.DB
 
 type Expense struct {
 	ID     int      `json:"id"`
@@ -35,7 +33,7 @@ func createExpenseHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
 	fmt.Println(e)
-	row := db.QueryRow("INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id", e.Title, e.Amount, e.Note, pq.Array(e.Tags))
+	row := database.DB.QueryRow("INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id", e.Title, e.Amount, e.Note, pq.Array(e.Tags))
 
 	err = row.Scan(&e.ID)
 	if err != nil {
@@ -47,33 +45,11 @@ func createExpenseHandler(c echo.Context) error {
 func main() {
 
 	fmt.Println("Please use server.go for main file")
+
 	config.LoadEnvironmentLocal()
 
-	databaseUrl, ok := os.LookupEnv("DATABASE_URL")
-	if !ok {
-		log.Fatalln("Error to load DATABASE_URL from .env file")
-	}
-
-	var err error
-	db, err = sql.Open("postgres", databaseUrl)
-	if err != nil {
-		log.Fatalln("Connect to Database error", err)
-	}
-	defer db.Close()
-
-	createTb := `CREATE TABLE IF NOT EXISTS expenses (
-		id SERIAL PRIMARY KEY,
-		title TEXT,
-		amount FLOAT,
-		note TEXT,
-		tags TEXT[]
-	);`
-	_, err = db.Exec(createTb)
-	if err != nil {
-		log.Fatalln("Can't create table", err)
-	}
-
-	fmt.Println("create table success!!")
+	database.InitDB()
+	defer database.DB.Close()
 
 	e := echo.New()
 
