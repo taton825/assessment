@@ -65,6 +65,7 @@ func main() {
 	if !ok {
 		log.Fatalln("Error to load DATABASE_URL from .env file")
 	}
+
 	var err error
 	db, err = sql.Open("postgres", databaseUrl)
 	if err != nil {
