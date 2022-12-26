@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/taton825/assessment/expense"
 )
 
 func TestCreateExpense(t *testing.T) {
@@ -19,7 +20,7 @@ func TestCreateExpense(t *testing.T) {
 		"note": "test server integration note", 
 		"tags": ["integration", "test"]
 	}`)
-	var e Expense
+	var e expense.Expense
 
 	res := request(http.MethodPost, uri("expenses"), body)
 	err := res.Decode(&e)
