@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 )
@@ -33,5 +32,5 @@ func InitDB() {
 		log.Fatalln("Can't create table", err)
 	}
 
-	fmt.Println("create table success!!")
+	log.Println("create table success!!")
 }
