@@ -25,6 +25,11 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.KeyAuthWithConfig(middleware.KeyAuthConfig{
+		Validator: func(auth string, c echo.Context) (bool, error) {
+			return auth == os.Getenv("AUTH_TOKEN"), nil
+		},
+	}))
 
 	e.POST("/expenses", expense.CreateExpenseHandler)
 

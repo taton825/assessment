@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -12,7 +11,7 @@ func LoadEnvironmentLocal() {
 	// Load env file from Local env file
 	_, ok := os.LookupEnv("PORT")
 	if !ok {
-		fmt.Println("Can't Lookup Env file with os lib")
+		log.Println("Can't Lookup Env file with os lib")
 		err := godotenv.Load(".env")
 		if err != nil {
 			log.Fatalln("Error to load .env file")
