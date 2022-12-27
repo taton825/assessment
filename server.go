@@ -27,6 +27,7 @@ func authMiddleware() echo.MiddlewareFunc {
 		}
 	}
 }
+
 func main() {
 
 	fmt.Println("Please use server.go for main file")
@@ -43,6 +44,7 @@ func main() {
 	e.Use(authMiddleware())
 
 	e.POST("/expenses", expense.CreateExpenseHandler)
+	e.GET("/expenses/:id", expense.GetExpenseHandler)
 
 	log.Println("Server started at :", os.Getenv("PORT"))
 	log.Fatal(e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))))
