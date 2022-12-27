@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -47,7 +46,7 @@ func TestGetExpense(t *testing.T) {
 	config.LoadEnvironmentLocal()
 
 	e := createExpense(t)
-	fmt.Println(e.ID)
+
 	var latest expense.Expense
 	res := request(http.MethodGet, uri("expenses", strconv.Itoa(e.ID)), nil)
 	err := res.Decode(&latest)
