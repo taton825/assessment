@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -38,6 +40,40 @@ func TestCreateExpense(t *testing.T) {
 	assert.Greater(t, len(e.Tags), 0)
 	assert.Equal(t, "integration", e.Tags[0])
 	assert.Equal(t, "test", e.Tags[1])
+}
+
+func TestGetExpense(t *testing.T) {
+
+	config.LoadEnvironmentLocal()
+
+	e := createExpense(t)
+	fmt.Println(e.ID)
+	var latest expense.Expense
+	res := request(http.MethodGet, uri("expenses", strconv.Itoa(e.ID)), nil)
+	err := res.Decode(&latest)
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, e.ID, latest.ID)
+	assert.Equal(t, e.Title, latest.Title)
+	assert.Equal(t, e.Amount, latest.Amount)
+	assert.Equal(t, e.Note, latest.Note)
+	assert.Equal(t, e.Tags, latest.Tags)
+}
+
+func createExpense(t *testing.T) expense.Expense {
+	var e expense.Expense
+	body := bytes.NewBufferString(`{
+		"title": "test server integration title by test",
+		"amount": 20,
+		"note": "test server integration note by test", 
+		"tags": ["integration by test", "tag by test"]
+	}`)
+	err := request(http.MethodPost, uri("expenses"), body).Decode(&e)
+	if err != nil {
+		t.Fatal("Can't create expense: ", err)
+	}
+	return e
 }
 
 type Response struct {
