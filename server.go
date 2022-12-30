@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -49,6 +53,23 @@ func main() {
 	e.GET("/expenses", expense.GetExpensesHandler)
 
 	log.Println("Server started at :", os.Getenv("PORT"))
-	log.Fatal(e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))))
-	log.Println("Server Shutdown!! bye bye")
+
+	go func() {
+		if err := e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server not gracefully stopped error:", err.Error())
+		}
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGTERM)
+	signal.Notify(shutdown, syscall.SIGINT)
+	signal.Notify(shutdown, os.Interrupt)
+	<-shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Server gracefully stopped")
+	}
 }
