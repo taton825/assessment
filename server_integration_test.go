@@ -60,6 +60,27 @@ func TestGetExpense(t *testing.T) {
 	assert.Equal(t, e.Tags, latest.Tags)
 }
 
+func TestPutExpense(t *testing.T) {
+
+	config.LoadEnvironmentLocal()
+
+	body := bytes.NewBufferString(`{
+		"id": 40,
+		"title": "apple smoothie",
+		"amount": 89,
+		"note": "no discount",
+		"tags": ["beverage"]
+	}`)
+
+	var lastest expense.Expense
+	res := request(http.MethodPut, uri("expenses", "40"), body)
+	err := res.Decode(&lastest)
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, 40, lastest.ID)
+}
+
 func createExpense(t *testing.T) expense.Expense {
 	var e expense.Expense
 	body := bytes.NewBufferString(`{
