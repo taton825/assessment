@@ -1,6 +1,7 @@
 package expense
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -24,4 +25,30 @@ func GetExpenseHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan row into variable: " + err.Error()})
 	}
 	return c.JSON(http.StatusOK, e)
+}
+
+func GetExpensesHandler(c echo.Context) error {
+	stmt, err := database.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't create prepare statement for get one expense: " + err.Error()})
+	}
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't query all expenses:" + err.Error()})
+	}
+
+	var expenses []Expense
+
+	for rows.Next() {
+		var e Expense
+		err := rows.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(&e.Tags))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan row into variable:" + err.Error()})
+		}
+		expenses = append(expenses, e)
+	}
+	log.Println("query all expenses success")
+
+	return c.JSON(http.StatusOK, expenses)
 }

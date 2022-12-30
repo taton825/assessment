@@ -92,6 +92,19 @@ func TestPutExpense(t *testing.T) {
 	assert.Equal(t, "beverage", query.Tags[0])
 }
 
+func TestGetExpenses(t *testing.T) {
+
+	config.LoadEnvironmentLocal()
+
+	var expenses []expense.Expense
+	res := request(http.MethodGet, uri("expenses"), nil)
+	err := res.Decode(&expenses)
+
+	assert.Nil(t, err)
+	assert.Greater(t, len(expenses), 0)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
 func selectExpense(t *testing.T, id int) expense.Expense {
 	var query expense.Expense
 	resQuery := request(http.MethodGet, uri("expenses", strconv.Itoa(id)), nil)
