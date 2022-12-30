@@ -81,20 +81,25 @@ func TestPutExpense(t *testing.T) {
 		t.Fatal("Error response update:", err.Error())
 	}
 
-	var query expense.Expense
-	resQuery := request(http.MethodGet, uri("expenses", strconv.Itoa(e.ID)), nil)
-	err = resQuery.Decode(&query)
-	if err != nil {
-		t.Fatal("Error response query:", err.Error())
-	}
+	query := selectExpense(t, e.ID)
 
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, resQuery.StatusCode)
+	assert.Equal(t, http.StatusOK, resUpdate.StatusCode)
 	assert.Equal(t, query.ID, lastest.ID)
 	assert.Equal(t, "apple smoothie", query.Title)
 	assert.Equal(t, 89.0, query.Amount)
 	assert.Equal(t, "no discount", query.Note)
 	assert.Equal(t, "beverage", query.Tags[0])
+}
+
+func selectExpense(t *testing.T, id int) expense.Expense {
+	var query expense.Expense
+	resQuery := request(http.MethodGet, uri("expenses", strconv.Itoa(id)), nil)
+	err := resQuery.Decode(&query)
+	if err != nil {
+		t.Fatal("Error response query:", err.Error())
+	}
+	return query
 }
 
 func createExpense(t *testing.T) expense.Expense {
