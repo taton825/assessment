@@ -45,6 +45,7 @@ func main() {
 
 	e.POST("/expenses", expense.CreateExpenseHandler)
 	e.GET("/expenses/:id", expense.GetExpenseHandler)
+	e.PUT("/expenses/:id", expense.PutExpenseHandler)
 
 	log.Println("Server started at :", os.Getenv("PORT"))
 	log.Fatal(e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))))

@@ -60,6 +60,43 @@ func TestGetExpense(t *testing.T) {
 	assert.Equal(t, e.Tags, latest.Tags)
 }
 
+func TestPutExpense(t *testing.T) {
+
+	config.LoadEnvironmentLocal()
+
+	e := createExpense(t)
+
+	body := bytes.NewBufferString(`{
+		"id": ` + strconv.Itoa(e.ID) + `,
+		"title": "apple smoothie",
+		"amount": 89,
+		"note": "no discount",
+		"tags": ["beverage"]
+	}`)
+
+	var lastest expense.Expense
+	resUpdate := request(http.MethodPut, uri("expenses", strconv.Itoa(e.ID)), body)
+	err := resUpdate.Decode(&lastest)
+	if err != nil {
+		t.Fatal("Error response update:", err.Error())
+	}
+
+	var query expense.Expense
+	resQuery := request(http.MethodGet, uri("expenses", strconv.Itoa(e.ID)), nil)
+	err = resQuery.Decode(&query)
+	if err != nil {
+		t.Fatal("Error response query:", err.Error())
+	}
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, resQuery.StatusCode)
+	assert.Equal(t, query.ID, lastest.ID)
+	assert.Equal(t, "apple smoothie", query.Title)
+	assert.Equal(t, 89.0, query.Amount)
+	assert.Equal(t, "no discount", query.Note)
+	assert.Equal(t, "beverage", query.Tags[0])
+}
+
 func createExpense(t *testing.T) expense.Expense {
 	var e expense.Expense
 	body := bytes.NewBufferString(`{
