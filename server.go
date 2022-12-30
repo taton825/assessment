@@ -32,6 +32,27 @@ func authMiddleware() echo.MiddlewareFunc {
 	}
 }
 
+func gracefullyShutdown(e *echo.Echo) {
+	go func() {
+		if err := e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil && err != http.ErrServerClosed {
+			log.Fatal("Server not gracefully stopped error:", err.Error())
+		}
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGTERM)
+	signal.Notify(shutdown, syscall.SIGINT)
+	signal.Notify(shutdown, os.Interrupt)
+	<-shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Server gracefully stopped")
+	}
+}
+
 func main() {
 
 	fmt.Println("Please use server.go for main file")
@@ -54,22 +75,5 @@ func main() {
 
 	log.Println("Server started at :", os.Getenv("PORT"))
 
-	go func() {
-		if err := e.Start(fmt.Sprintf(":%s", os.Getenv("PORT"))); err != nil && err != http.ErrServerClosed {
-			log.Fatal("Server not gracefully stopped error:", err.Error())
-		}
-	}()
-
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGTERM)
-	signal.Notify(shutdown, syscall.SIGINT)
-	signal.Notify(shutdown, os.Interrupt)
-	<-shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := e.Shutdown(ctx); err != nil {
-		log.Fatal(err)
-	} else {
-		log.Println("Server gracefully stopped")
-	}
+	gracefullyShutdown(e)
 }
