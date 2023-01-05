@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
-	"github.com/taton825/assessment/database"
 )
 
 func (h *handler) GetExpenseHandler(c echo.Context) error {
@@ -29,8 +28,8 @@ func (h *handler) GetExpenseHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, e)
 }
 
-func GetExpensesHandler(c echo.Context) error {
-	stmt, err := database.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses")
+func (h *handler) GetExpensesHandler(c echo.Context) error {
+	stmt, err := h.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't create prepare statement for get one expense: " + err.Error()})
 	}

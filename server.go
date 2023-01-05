@@ -73,7 +73,7 @@ func main() {
 	e.POST("/expenses", h.CreateExpenseHandler)
 	e.GET("/expenses/:id", h.GetExpenseHandler)
 	e.PUT("/expenses/:id", h.PutExpenseHandler)
-	e.GET("/expenses", expense.GetExpensesHandler)
+	e.GET("/expenses", h.GetExpensesHandler)
 
 	log.Println("Server started at :", os.Getenv("PORT"))
 

@@ -49,3 +49,39 @@ func TestGetExpenseHandler(t *testing.T) {
 		assert.Equal(t, expect, strings.TrimSpace(rec.Body.String()))
 	}
 }
+
+func TestGetExpensesHandler(t *testing.T) {
+	// Arrange
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/expenses", strings.NewReader(""))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+
+	tags := []string{"handler", "test"}
+
+	expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+		AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+		AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+	queryMockSql := "SELECT id, title, amount, note, tags FROM expenses"
+
+	db, mock, err := sqlmock.New()
+	mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+		ExpectQuery().
+		WillReturnRows(expensesMockRows)
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	h := handler{db}
+	c := e.NewContext(req, rec)
+
+	// Act
+	err = h.GetExpensesHandler(c)
+
+	expect := `[{"id":1,"title":"test handler title1","amount":10,"note":"test handler note1","tags":["handler","test"]},{"id":2,"title":"test handler title2","amount":10,"note":"test handler note2","tags":["handler","test"]}]`
+
+	// Assertion
+	if assert.NoError(t, err) {
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, expect, strings.TrimSpace(rec.Body.String()))
+	}
+}
