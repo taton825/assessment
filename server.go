@@ -62,16 +62,18 @@ func main() {
 	database.InitDB()
 	defer database.DB.Close()
 
+	h := expense.NewApplication(database.DB)
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(authMiddleware())
 
-	e.POST("/expenses", expense.CreateExpenseHandler)
-	e.GET("/expenses/:id", expense.GetExpenseHandler)
-	e.PUT("/expenses/:id", expense.PutExpenseHandler)
-	e.GET("/expenses", expense.GetExpensesHandler)
+	e.POST("/expenses", h.CreateExpenseHandler)
+	e.GET("/expenses/:id", h.GetExpenseHandler)
+	e.PUT("/expenses/:id", h.PutExpenseHandler)
+	e.GET("/expenses", h.GetExpensesHandler)
 
 	log.Println("Server started at :", os.Getenv("PORT"))
 
