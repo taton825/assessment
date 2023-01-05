@@ -1,7 +1,6 @@
 package expense
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -49,7 +48,6 @@ func (h *handler) GetExpensesHandler(c echo.Context) error {
 		}
 		expenses = append(expenses, e)
 	}
-	log.Println("query all expenses success")
 
 	return c.JSON(http.StatusOK, expenses)
 }
