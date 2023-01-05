@@ -15,10 +15,7 @@ import (
 
 func TestGetExpenseHandler(t *testing.T) {
 	// Arrange
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/expenses", strings.NewReader(""))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
+	e, req, rec := initialRequest()
 
 	tags := []string{"handler", "test"}
 	expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
@@ -44,18 +41,12 @@ func TestGetExpenseHandler(t *testing.T) {
 	err = h.GetExpenseHandler(c)
 
 	// Assertion
-	if assert.NoError(t, err) {
-		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, expect, strings.TrimSpace(rec.Body.String()))
-	}
+	assertResult(t, err, rec, expect)
 }
 
 func TestGetExpensesHandler(t *testing.T) {
 	// Arrange
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/expenses", strings.NewReader(""))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
+	e, req, rec := initialRequest()
 
 	tags := []string{"handler", "test"}
 
@@ -80,6 +71,18 @@ func TestGetExpensesHandler(t *testing.T) {
 	expect := `[{"id":1,"title":"test handler title1","amount":10,"note":"test handler note1","tags":["handler","test"]},{"id":2,"title":"test handler title2","amount":10,"note":"test handler note2","tags":["handler","test"]}]`
 
 	// Assertion
+	assertResult(t, err, rec, expect)
+}
+
+func initialRequest() (*echo.Echo, *http.Request, *httptest.ResponseRecorder) {
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/expenses", strings.NewReader(""))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	return e, req, rec
+}
+
+func assertResult(t *testing.T, err error, rec *httptest.ResponseRecorder, expect string) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, expect, strings.TrimSpace(rec.Body.String()))
