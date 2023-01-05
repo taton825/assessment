@@ -9,10 +9,11 @@ import (
 	"github.com/taton825/assessment/database"
 )
 
-func GetExpenseHandler(c echo.Context) error {
+func (h *handler) GetExpenseHandler(c echo.Context) error {
 	rowid := c.Param("id")
 
-	stmt, err := database.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
+	stmt, err := h.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
+	// fmt.Println("err prepare: " + err.Error())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't create prepare statement for get one expense: " + err.Error()})
 	}
@@ -21,6 +22,7 @@ func GetExpenseHandler(c echo.Context) error {
 
 	var e Expense
 	err = row.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(&e.Tags))
+	// fmt.Println("err scan: " + err.Error())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan row into variable: " + err.Error()})
 	}

@@ -71,7 +71,7 @@ func main() {
 	e.Use(authMiddleware())
 
 	e.POST("/expenses", h.CreateExpenseHandler)
-	e.GET("/expenses/:id", expense.GetExpenseHandler)
+	e.GET("/expenses/:id", h.GetExpenseHandler)
 	e.PUT("/expenses/:id", expense.PutExpenseHandler)
 	e.GET("/expenses", expense.GetExpensesHandler)
 
