@@ -1,24 +1,61 @@
+//go:build integration
+// +build integration
+
 package main
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/taton825/assessment/config"
+	"github.com/taton825/assessment/database"
 	"github.com/taton825/assessment/expense"
 )
 
-func TestCreateExpense(t *testing.T) {
-
+func init() {
 	config.LoadEnvironmentLocal()
 
+	eh := echo.New()
+	go func(e *echo.Echo) {
+
+		database.InitITDB()
+		defer database.DB.Close()
+
+		h := expense.NewApplication(database.DB)
+
+		e.Use(authMiddleware())
+
+		e.POST("/expenses", h.CreateExpenseHandler)
+		e.GET("/expenses/:id", h.GetExpenseHandler)
+		e.PUT("/expenses/:id", h.PutExpenseHandler)
+		e.GET("/expenses", h.GetExpensesHandler)
+		e.Start(fmt.Sprintf(":%s", os.Getenv("PORT")))
+	}(eh)
+	for {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%s", os.Getenv("PORT")), 30*time.Second)
+		if err != nil {
+			log.Println(err)
+		}
+		if conn != nil {
+			conn.Close()
+			break
+		}
+	}
+}
+
+func TestCreateExpense(t *testing.T) {
 	body := bytes.NewBufferString(`{
 		"title": "test server integration title",
 		"amount": 10,
@@ -42,9 +79,6 @@ func TestCreateExpense(t *testing.T) {
 }
 
 func TestGetExpense(t *testing.T) {
-
-	config.LoadEnvironmentLocal()
-
 	e := createExpense(t)
 
 	var latest expense.Expense
@@ -61,9 +95,6 @@ func TestGetExpense(t *testing.T) {
 }
 
 func TestPutExpense(t *testing.T) {
-
-	config.LoadEnvironmentLocal()
-
 	e := createExpense(t)
 
 	body := bytes.NewBufferString(`{
@@ -93,9 +124,6 @@ func TestPutExpense(t *testing.T) {
 }
 
 func TestGetExpenses(t *testing.T) {
-
-	config.LoadEnvironmentLocal()
-
 	var expenses []expense.Expense
 	res := request(http.MethodGet, uri("expenses"), nil)
 	err := res.Decode(&expenses)
@@ -143,7 +171,7 @@ func (r *Response) Decode(v interface{}) error {
 }
 
 func uri(paths ...string) string {
-	host := "http://localhost:2565"
+	host := fmt.Sprintf("http://localhost:%s", os.Getenv("PORT"))
 	if paths == nil {
 		return host
 	}
