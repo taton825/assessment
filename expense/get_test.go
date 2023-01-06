@@ -176,48 +176,19 @@ func TestGetExpensesHandler(t *testing.T) {
 		// Arrange
 		e, req, rec := initialRequest()
 
-		// tags := []string{"handler", "test"}
+		tags := []string{"handler", "test"}
 
-		// expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-		// 	AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
-		// 	AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
-		// RowError(3, fmt.Errorf("Error Row"))
-		queryMockSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id"
-
-		db, mock, err := sqlmock.New()
-		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
-			ExpectQuery().
-			WillReturnError(fmt.Errorf("Error Return Query"))
-		if err != nil {
-			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-		}
-		h := handler{db}
-		c := e.NewContext(req, rec)
-
-		// Act
-		err = h.GetExpensesHandler(c)
-
-		// Assertion
-		if assert.NoError(t, err) {
-			assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		}
-	})
-	t.Run("Test Get All Row Scan Error", func(t *testing.T) {
-		// Arrange
-		e, req, rec := initialRequest()
-
-		// tags := []string{"handler", "test"}
-
-		// expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-		// 	AddRow(1, "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
-		// 	AddRow(2, "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+		expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow(1, "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+			AddRow("2", "test handler title2", "10.0", "test handler note2", pq.Array(tags))
 
 		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses"
 
 		db, mock, err := sqlmock.New()
 		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
-			ExpectQuery().WithArgs(1).
-			WillReturnRows().WillReturnError(fmt.Errorf("error"))
+			ExpectQuery().
+			WillReturnRows(expensesMockRows).
+			WillReturnError(fmt.Errorf("Error Query"))
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
