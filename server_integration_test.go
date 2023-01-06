@@ -19,13 +19,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/taton825/assessment/config"
 	"github.com/taton825/assessment/database"
 	"github.com/taton825/assessment/expense"
 )
 
 func init() {
-	config.LoadEnvironmentLocal()
 
 	eh := echo.New()
 	go func(e *echo.Echo) {
