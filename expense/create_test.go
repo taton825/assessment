@@ -1,9 +1,7 @@
-//go:build unit
-// +build unit
-
 package expense
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -17,38 +15,104 @@ import (
 )
 
 func TestCreateExpenseHandler(t *testing.T) {
-	// Arrange
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/expenses", strings.NewReader(`{
-		"title": "test handler title",
-		"amount": 10,
-		"note": "test handler note", 
-		"tags": ["handler", "test"]
-	}`))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
 
-	tags := []string{"handler", "test"}
-	mockedSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id"
+	t.Run("Test Create Success", func(t *testing.T) {
+		// Arrange
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/expenses", strings.NewReader(`{
+			"title": "test handler title",
+			"amount": 10,
+			"note": "test handler note", 
+			"tags": ["handler", "test"]
+		}`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
 
-	mockRows := sqlmock.NewRows([]string{"id"}).AddRow("1")
+		tags := []string{"handler", "test"}
+		mockedSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id"
 
-	db, mock, err := sqlmock.New()
-	mock.ExpectQuery(regexp.QuoteMeta(mockedSql)).
-		WithArgs("test handler title", 10.0, "test handler note", pq.Array(tags)).
-		WillReturnRows(mockRows)
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+		mockRows := sqlmock.NewRows([]string{"id"}).AddRow("1")
 
-	h := handler{db}
-	c := e.NewContext(req, rec)
+		db, mock, err := sqlmock.New()
+		mock.ExpectQuery(regexp.QuoteMeta(mockedSql)).
+			WithArgs("test handler title", 10.0, "test handler note", pq.Array(tags)).
+			WillReturnRows(mockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
 
-	// Act
-	err = h.CreateExpenseHandler(c)
+		h := handler{db}
+		c := e.NewContext(req, rec)
 
-	// Assertion
-	if assert.NoError(t, err) {
-		assert.Equal(t, http.StatusCreated, rec.Code)
-	}
+		// Act
+		err = h.CreateExpenseHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusCreated, rec.Code)
+		}
+	})
+
+	t.Run("Test Call Bad Request", func(t *testing.T) {
+		// Arrange
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/expenses", strings.NewReader(`{
+			"title": "test handler title",
+			"amount": 10,
+			"note": "test handler note", 
+			"tags": ["handler", "test"],
+		}`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+
+		db, _, err := sqlmock.New()
+
+		h := handler{db}
+		c := e.NewContext(req, rec)
+
+		// Act
+		err = h.CreateExpenseHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+		}
+	})
+
+	t.Run("Test Scan Error", func(t *testing.T) {
+		// Arrange
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/expenses", strings.NewReader(`{
+			"title": "test handler title",
+			"amount": 10,
+			"note": "test handler note", 
+			"tags": ["handler", "test"]
+		}`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+
+		tags := []string{"handler", "test"}
+		mockedSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id"
+
+		mockRows := sqlmock.NewRows([]string{"id"}).RowError(1, fmt.Errorf("Error row"))
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectQuery(regexp.QuoteMeta(mockedSql)).
+			WithArgs("test handler title", 10.0, "test handler note", pq.Array(tags)).
+			WillReturnRows(mockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+
+		h := handler{db}
+		c := e.NewContext(req, rec)
+
+		// Act
+		err = h.CreateExpenseHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
 }

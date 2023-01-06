@@ -30,7 +30,7 @@ func (h *handler) GetExpenseHandler(c echo.Context) error {
 func (h *handler) GetExpensesHandler(c echo.Context) error {
 	stmt, err := h.DB.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't create prepare statement for get one expense: " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't create prepare statement for get all expense: " + err.Error()})
 	}
 
 	rows, err := stmt.Query()

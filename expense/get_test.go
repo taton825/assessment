@@ -1,9 +1,7 @@
-//go:build unit
-// +build unit
-
 package expense
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -17,64 +15,223 @@ import (
 )
 
 func TestGetExpenseHandler(t *testing.T) {
-	// Arrange
-	e, req, rec := initialRequest()
 
-	tags := []string{"handler", "test"}
-	expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-		AddRow("1", "test handler title", 10.0, "test handler note", pq.Array(tags))
-	queryMockSql := "SELECT id, title, amount, note, tags FROM expenses WHERE id = $1"
+	t.Run("Test Get One Row Success", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
 
-	db, mock, err := sqlmock.New()
-	mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
-		ExpectQuery().
-		WithArgs("1").WillReturnRows(expenseMockRows)
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	h := handler{db}
-	c := e.NewContext(req, rec)
-	c.SetPath("/expenses/:id")
-	c.SetParamNames("id")
-	c.SetParamValues("1")
+		tags := []string{"handler", "test"}
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("1", "test handler title", 10.0, "test handler note", pq.Array(tags))
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses WHERE id = $1"
 
-	expect := `{"id":1,"title":"test handler title","amount":10,"note":"test handler note","tags":["handler","test"]}`
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WithArgs("1").WillReturnRows(expenseMockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+		c.SetPath("/expenses/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
 
-	// Act
-	err = h.GetExpenseHandler(c)
+		expect := `{"id":1,"title":"test handler title","amount":10,"note":"test handler note","tags":["handler","test"]}`
 
-	// Assertion
-	assertResult(t, err, rec, expect)
+		// Act
+		err = h.GetExpenseHandler(c)
+
+		// Assertion
+		assertResult(t, err, rec, expect)
+	})
+
+	t.Run("Test Get One Row Prepare Error", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
+
+		tags := []string{"handler", "test"}
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("1", "test handler title", 10.0, "test handler note", pq.Array(tags))
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses WHERE id = $1$" // Error Here
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WithArgs("1").WillReturnRows(expenseMockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+		c.SetPath("/expenses/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		// Act
+		err = h.GetExpenseHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
+
+	t.Run("Test Get One Row Scan Error", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
+
+		tags := []string{"handler", "test"}
+		expenseMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("1", "test handler title", 10.0, "test handler note", pq.Array(tags))
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses WHERE id = $1"
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WithArgs(1).WillReturnRows(expenseMockRows) // Error Here
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+		c.SetPath("/expenses/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		// Act
+		err = h.GetExpenseHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
 }
 
 func TestGetExpensesHandler(t *testing.T) {
-	// Arrange
-	e, req, rec := initialRequest()
 
-	tags := []string{"handler", "test"}
+	t.Run("Test Get All Row Success", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
 
-	expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-		AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
-		AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
-	queryMockSql := "SELECT id, title, amount, note, tags FROM expenses"
+		tags := []string{"handler", "test"}
 
-	db, mock, err := sqlmock.New()
-	mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
-		ExpectQuery().
-		WillReturnRows(expensesMockRows)
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	h := handler{db}
-	c := e.NewContext(req, rec)
+		expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+			AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses"
 
-	// Act
-	err = h.GetExpensesHandler(c)
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WillReturnRows(expensesMockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
 
-	expect := `[{"id":1,"title":"test handler title1","amount":10,"note":"test handler note1","tags":["handler","test"]},{"id":2,"title":"test handler title2","amount":10,"note":"test handler note2","tags":["handler","test"]}]`
+		// Act
+		err = h.GetExpensesHandler(c)
 
-	// Assertion
-	assertResult(t, err, rec, expect)
+		expect := `[{"id":1,"title":"test handler title1","amount":10,"note":"test handler note1","tags":["handler","test"]},{"id":2,"title":"test handler title2","amount":10,"note":"test handler note2","tags":["handler","test"]}]`
+
+		// Assertion
+		assertResult(t, err, rec, expect)
+	})
+
+	t.Run("Test Get All Row Prepare Error", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
+
+		tags := []string{"handler", "test"}
+
+		expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+			AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+			AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses $"
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WillReturnRows(expensesMockRows)
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+
+		// Act
+		err = h.GetExpensesHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
+
+	t.Run("Test Get All Row Query Error", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
+
+		// tags := []string{"handler", "test"}
+
+		// expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+		// 	AddRow("1", "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+		// 	AddRow("2", "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+		// RowError(3, fmt.Errorf("Error Row"))
+		queryMockSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4) RETURNING id"
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().
+			WillReturnError(fmt.Errorf("Error Return Query"))
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+
+		// Act
+		err = h.GetExpensesHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
+	t.Run("Test Get All Row Scan Error", func(t *testing.T) {
+		// Arrange
+		e, req, rec := initialRequest()
+
+		// tags := []string{"handler", "test"}
+
+		// expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+		// 	AddRow(1, "test handler title1", 10.0, "test handler note1", pq.Array(tags)).
+		// 	AddRow(2, "test handler title2", 10.0, "test handler note2", pq.Array(tags))
+
+		queryMockSql := "SELECT id, title, amount, note, tags FROM expenses"
+
+		db, mock, err := sqlmock.New()
+		mock.ExpectPrepare(regexp.QuoteMeta(queryMockSql)).
+			ExpectQuery().WithArgs(1).
+			WillReturnRows().WillReturnError(fmt.Errorf("error"))
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		h := handler{db}
+		c := e.NewContext(req, rec)
+
+		// Act
+		err = h.GetExpensesHandler(c)
+
+		// Assertion
+		if assert.NoError(t, err) {
+			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+		}
+	})
 }
 
 func initialRequest() (*echo.Echo, *http.Request, *httptest.ResponseRecorder) {
