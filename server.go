@@ -12,7 +12,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/taton825/assessment/config"
 	"github.com/taton825/assessment/database"
 	"github.com/taton825/assessment/expense"
 )
@@ -56,8 +55,6 @@ func gracefullyShutdown(e *echo.Echo) {
 func main() {
 
 	fmt.Println("Please use server.go for main file")
-
-	config.LoadEnvironmentLocal()
 
 	database.InitDB()
 	defer database.DB.Close()
