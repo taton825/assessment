@@ -66,6 +66,9 @@ func TestCreateExpenseHandler(t *testing.T) {
 		rec := httptest.NewRecorder()
 
 		db, _, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
 
 		h := handler{db}
 		c := e.NewContext(req, rec)
